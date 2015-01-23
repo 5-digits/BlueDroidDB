@@ -16,6 +16,13 @@ public class SQLiteDatabase {
 		isOpen = true;
 	}
 
+	/**
+	 * @return the isOpen
+	 */
+	public boolean isOpen() {
+		return isOpen;
+	}
+
 	public boolean tableExists(String tableName) throws SQLiteException {
 		checkOpened();
 		String s = "SELECT rowid FROM sqlite_master WHERE type='table' AND name=?;";
@@ -47,7 +54,7 @@ public class SQLiteDatabase {
 	public void close() {
 		if (isOpen) {
 			try {
-				commitTransaction();
+				endTransaction();
 				closedb(sqliteHandle);
 			} catch (SQLiteException e) {
 				e.printStackTrace();
@@ -78,7 +85,7 @@ public class SQLiteDatabase {
 		beginTransaction(sqliteHandle);
 	}
 
-	public void commitTransaction() {
+	public void endTransaction() {
 		if (!inTransaction) {
 			return;
 		}
@@ -89,6 +96,11 @@ public class SQLiteDatabase {
 	native int opendb(String fileName, String tempDir) throws SQLiteException;
 
 	native void closedb(int sqliteHandle) throws SQLiteException;
+
+	/**********/
+	public native boolean keyDB(int sqliteHandle, String key);
+
+	public native void reKeyDB(int sqliteHandle, String oldKey, String newKey);
 
 	native void beginTransaction(int sqliteHandle);
 

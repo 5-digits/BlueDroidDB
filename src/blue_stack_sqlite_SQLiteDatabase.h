@@ -25,6 +25,22 @@ JNIEXPORT void JNICALL Java_blue_stack_sqlite_SQLiteDatabase_closedb
 
 /*
  * Class:     blue_stack_sqlite_SQLiteDatabase
+ * Method:    keyDB
+ * Signature: (ILjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_blue_stack_sqlite_SQLiteDatabase_keyDB
+  (JNIEnv *, jobject, jint, jstring);
+
+/*
+ * Class:     blue_stack_sqlite_SQLiteDatabase
+ * Method:    reKeyDB
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_blue_stack_sqlite_SQLiteDatabase_reKeyDB
+  (JNIEnv *, jobject, jint, jstring, jstring);
+
+/*
+ * Class:     blue_stack_sqlite_SQLiteDatabase
  * Method:    beginTransaction
  * Signature: (I)V
  */

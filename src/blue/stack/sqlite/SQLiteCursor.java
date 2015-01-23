@@ -70,7 +70,7 @@ public class SQLiteCursor {
 			int repeatCount = 6;
 			while (repeatCount-- != 0) {
 				try {
-					Log.e("tmessages", "sqlite busy, waiting...");
+					Log.e("DB", "sqlite busy, waiting...");
 					Thread.sleep(500);
 					res = preparedStatement.step();
 					if (res == 0) {

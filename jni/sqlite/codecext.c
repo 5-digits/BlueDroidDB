@@ -159,8 +159,9 @@ int sqlite3CodecAttach(sqlite3* db, int nDb, const void* zKey, int nKey)
   }
 
   sqlite3_mutex_leave(db->mutex);
+  return CodecIsEncrypted(codec);
 
-  return SQLITE_OK;
+  //return SQLITE_OK;
 }
 
 void sqlite3CodecGetKey(sqlite3* db, int nDb, void** zKey, int* nKey)
