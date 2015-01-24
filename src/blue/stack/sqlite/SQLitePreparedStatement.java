@@ -3,6 +3,7 @@ package blue.stack.sqlite;
 import java.nio.ByteBuffer;
 
 import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException;
+import blue.stack.bluedroiddb.cvTest.TimeCounter;
 
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
@@ -140,8 +141,9 @@ public class SQLitePreparedStatement {
 	 * insert recorder and get latsed id ,if error return -1
 	 * *********/
 	public long exeInsertWithDispose() throws SQLiteException {
-
+		TimeCounter.start();
 		long result = nativeExecuteForLastInsertedRowId(sqliteHandle, sqliteStatementHandle);
+		TimeCounter.end();
 		dispose();
 		return result;
 	}

@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
 import android.text.TextUtils;
+import blue.stack.bluedroiddb.cvTest.BuildTimeCounter;
 
 public class SQLiteDatabase {
 	private static final String TAG = "SQLiteDatabase";
@@ -178,16 +179,13 @@ public class SQLiteDatabase {
 	 *            keys should be the column names and the values the column
 	 *            values
 	 * @return the row ID of the newly inserted row, or -1 if an error occurred
+	 * @throws SQLiteException
 	 */
 	@Deprecated
-	public long insert(String table, String nullColumnHack, ContentValues values) {
-		try {
-			return insertWithOnConflict(table, nullColumnHack, values, 0);
-		} catch (SQLiteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return sqliteHandle;
+	public long insert(String table, String nullColumnHack, ContentValues values) throws SQLiteException {
+
+		return insertWithOnConflict(table, nullColumnHack, values, 0);
+
 	}
 
 	/**
@@ -218,42 +216,48 @@ public class SQLiteDatabase {
 	public long insertWithOnConflict(String table, String nullColumnHack,
 			ContentValues initialValues, int conflictAlgorithm) throws SQLiteException {
 		// acquireReference();
-		try {
-			StringBuilder sql = new StringBuilder();
-			sql.append("INSERT");
-			sql.append(CONFLICT_VALUES[conflictAlgorithm]);
-			sql.append(" INTO ");
-			sql.append(table);
-			sql.append('(');
+		// try {
+		BuildTimeCounter.start();
+		StringBuilder sql = new StringBuilder();
+		sql.append("INSERT");
+		sql.append(CONFLICT_VALUES[conflictAlgorithm]);
+		sql.append(" INTO ");
+		sql.append(table);
+		sql.append('(');
 
-			Object[] bindArgs = null;
-			int size = (initialValues != null && initialValues.size() > 0)
-					? initialValues.size() : 0;
-			if (size > 0) {
-				bindArgs = new Object[size];
-				int i = 0;
-				for (String colName : initialValues.keySet()) {
-					sql.append((i > 0) ? "," : "");
-					sql.append(colName);
-					bindArgs[i++] = initialValues.get(colName);
-				}
-				sql.append(')');
-				sql.append(" VALUES (");
-				for (i = 0; i < size; i++) {
-					sql.append((i > 0) ? ",?" : "?");
-				}
-			} else {
-				sql.append(nullColumnHack + ") VALUES (NULL");
+		Object[] bindArgs = null;
+		int size = (initialValues != null && initialValues.size() > 0)
+				? initialValues.size() : 0;
+		if (size > 0) {
+			bindArgs = new Object[size];
+			int i = 0;
+			for (String colName : initialValues.keySet()) {
+				sql.append((i > 0) ? "," : "");
+				sql.append(colName);
+				bindArgs[i++] = initialValues.get(colName);
 			}
 			sql.append(')');
-			SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(), true);
-			sqLitePreparedStatement.bindArguments(bindArgs);
-			sqLitePreparedStatement.exeInsertWithDispose();
-
-			// }
-		} finally {
-			// releaseReference();
+			sql.append(" VALUES (");
+			for (i = 0; i < size; i++) {
+				sql.append((i > 0) ? ",?" : "?");
+			}
+		} else {
+			sql.append(nullColumnHack + ") VALUES (NULL");
 		}
+		sql.append(')');
+		BuildTimeCounter.end();
+
+		SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(), bindArgs);
+
+		sqLitePreparedStatement.bindArguments(bindArgs);
+
+		sqLitePreparedStatement.exeInsertWithDispose();
+		// TimeCounter.end();
+
+		// }
+		// } finally {
+		// // releaseReference();
+		// }
 		return conflictAlgorithm;
 	}
 

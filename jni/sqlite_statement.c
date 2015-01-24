@@ -46,7 +46,7 @@ JNIEXPORT int Java_blue_stack_sqlite_SQLitePreparedStatement_prepare(JNIEnv *env
 }
 
 
-static int executeNonQuery(JNIEnv* env, sqlite3* db, sqlite3_stmt* statement) {
+static inline int executeNonQuery(JNIEnv* env, sqlite3* db, sqlite3_stmt* statement) {
 	int err = sqlite3_step(statement);
 	if (err == SQLITE_ROW) {
 		throw_sqlite3_exception(env, sqlite3_db_handle(statement), err);

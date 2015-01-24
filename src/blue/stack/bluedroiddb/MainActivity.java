@@ -11,6 +11,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import blue.stack.bluedroiddb.cvTest.BuildTimeCounter;
+import blue.stack.bluedroiddb.cvTest.TimeCounter;
 import blue.stack.bluedroiddb.systest.SysSQLiteOpenHelper;
 import blue.stack.sqlite.SQLiteCursor;
 import blue.stack.sqlite.SQLiteDatabase;
@@ -290,18 +292,65 @@ public class MainActivity extends Activity implements OnClickListener {
 	}
 
 	public void testDBCVInsert() {
+		TimeCounter.add = 0;
+		BuildTimeCounter.add = 0;
 		long start = System.currentTimeMillis();
 		ContentValues contentValues = new ContentValues();
-		for (int i = 0; i < 5000; i++) {
-			contentValues.clear();
-			contentValues.put("uid", i);
-			contentValues.put("name", "content" + i);
-			contentValues.put("status", 1 + i);
-			database.insert("users", null, contentValues);
+		try {
+			database.beginTransaction();
+		} catch (SQLiteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
+		try {
+			for (int i = 0; i < 100; i++) {
+				contentValues.clear();
+				contentValues.put("uid", i);
+				contentValues.put("name", "content" + i);
+				contentValues.put("status", 1 + i);
 
-		long end = System.currentTimeMillis();
-		System.out.println("MainActivity.contentValues(insert)" + (end - start));
+				database.insert("users", null, contentValues);
+
+			}
+		} catch (SQLiteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		database.endTransaction();
+		// long end = System.currentTimeMillis();
+		System.out.println("MainActivity.contentValues(insert)" + TimeCounter.add + "|" + BuildTimeCounter.add);
+		TimeCounter.add = 0;
+		BuildTimeCounter.add = 0;
+		try {
+			database.beginTransaction();
+		} catch (SQLiteException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		for (int i = 0; i < 100; i++) {
+
+			SQLitePreparedStatement state;
+			try {
+				state = database.executeFast("insert INTO users VALUES(?,?,?)");
+				state.requery();
+				state.bindInteger(1, i);
+				state.bindString(2, i + "bind");
+				state.bindInteger(3, i);
+				// state.step();
+				state.exeInsertWithDispose();
+
+				// state.dispose();
+
+			} catch (SQLiteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			// state.bindByteBuffer(4, ByteBuffer.wrap("user".getBytes()));
+
+		}
+		database.endTransaction();
+		System.out.println("MainActivity.bind(insert)" + TimeCounter.add + "|" + BuildTimeCounter.add);
 	}
 
 	public void testDBCVupdate() {
