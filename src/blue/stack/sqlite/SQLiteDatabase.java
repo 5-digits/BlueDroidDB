@@ -1,6 +1,11 @@
 package blue.stack.sqlite;
 
 import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteQueryBuilder;
+import android.os.CancellationSignal;
+import android.os.OperationCanceledException;
 import android.text.TextUtils;
 
 public class SQLiteDatabase {
@@ -335,6 +340,211 @@ public class SQLiteDatabase {
 				e.printStackTrace();
 				return 0;
 			}
+
+		} finally {
+
+		}
+	}
+
+	/**
+	 * Convenience method for deleting rows in the database.
+	 *
+	 * @param table
+	 *            the table to delete from
+	 * @param whereClause
+	 *            the optional WHERE clause to apply when deleting. Passing null
+	 *            will delete all rows.
+	 * @param whereArgs
+	 *            You may include ?s in the where clause, which will be replaced
+	 *            by the values from whereArgs. The values will be bound as
+	 *            Strings.
+	 * @return the number of rows affected if a whereClause is passed in, 0
+	 *         otherwise. To remove all rows and get a count pass "1" as the
+	 *         whereClause.
+	 * @throws SQLiteException
+	 */
+	public int delete(String table, String whereClause, String[] whereArgs) throws SQLiteException {
+		SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, "DELETE FROM " + table +
+				(!TextUtils.isEmpty(whereClause) ? " WHERE " + whereClause : ""), whereArgs);
+		sqLitePreparedStatement.bindArguments(whereArgs);
+		sqLitePreparedStatement.stepThis().dispose();
+		// TODO add result
+		return sqliteHandle;
+	}
+
+	public SQLiteCursor query(String table, String[] columns, String selection,
+			String[] selectionArgs) {
+
+		try {
+			return query(false, table, columns, selection, selectionArgs, null,
+					null, null, null /* limit */);
+		} catch (SQLiteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Query the given table, returning a {@link Cursor} over the result set.
+	 *
+	 * @param table
+	 *            The table name to compile the query against.
+	 * @param columns
+	 *            A list of which columns to return. Passing null will return
+	 *            all columns, which is discouraged to prevent reading data from
+	 *            storage that isn't going to be used.
+	 * @param selection
+	 *            A filter declaring which rows to return, formatted as an SQL
+	 *            WHERE clause (excluding the WHERE itself). Passing null will
+	 *            return all rows for the given table.
+	 * @param selectionArgs
+	 *            You may include ?s in selection, which will be replaced by the
+	 *            values from selectionArgs, in order that they appear in the
+	 *            selection. The values will be bound as Strings.
+	 * @param groupBy
+	 *            A filter declaring how to group rows, formatted as an SQL
+	 *            GROUP BY clause (excluding the GROUP BY itself). Passing null
+	 *            will cause the rows to not be grouped.
+	 * @param having
+	 *            A filter declare which row groups to include in the cursor, if
+	 *            row grouping is being used, formatted as an SQL HAVING clause
+	 *            (excluding the HAVING itself). Passing null will cause all row
+	 *            groups to be included, and is required when row grouping is
+	 *            not being used.
+	 * @param orderBy
+	 *            How to order the rows, formatted as an SQL ORDER BY clause
+	 *            (excluding the ORDER BY itself). Passing null will use the
+	 *            default sort order, which may be unordered.
+	 * @return A {@link Cursor} object, which is positioned before the first
+	 *         entry. Note that {@link Cursor}s are not synchronized, see the
+	 *         documentation for more details.
+	 * @see Cursor
+	 */
+	public SQLiteCursor query(String table, String[] columns, String selection,
+			String[] selectionArgs, String groupBy, String having,
+			String orderBy) {
+
+		try {
+			return query(false, table, columns, selection, selectionArgs, groupBy,
+					having, orderBy, null /* limit */);
+		} catch (SQLiteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/**
+	 * Query the given URL, returning a {@link Cursor} over the result set.
+	 *
+	 * @param distinct
+	 *            true if you want each row to be unique, false otherwise.
+	 * @param table
+	 *            The table name to compile the query against.
+	 * @param columns
+	 *            A list of which columns to return. Passing null will return
+	 *            all columns, which is discouraged to prevent reading data from
+	 *            storage that isn't going to be used.
+	 * @param selection
+	 *            A filter declaring which rows to return, formatted as an SQL
+	 *            WHERE clause (excluding the WHERE itself). Passing null will
+	 *            return all rows for the given table.
+	 * @param selectionArgs
+	 *            You may include ?s in selection, which will be replaced by the
+	 *            values from selectionArgs, in order that they appear in the
+	 *            selection. The values will be bound as Strings.
+	 * @param groupBy
+	 *            A filter declaring how to group rows, formatted as an SQL
+	 *            GROUP BY clause (excluding the GROUP BY itself). Passing null
+	 *            will cause the rows to not be grouped.
+	 * @param having
+	 *            A filter declare which row groups to include in the cursor, if
+	 *            row grouping is being used, formatted as an SQL HAVING clause
+	 *            (excluding the HAVING itself). Passing null will cause all row
+	 *            groups to be included, and is required when row grouping is
+	 *            not being used.
+	 * @param orderBy
+	 *            How to order the rows, formatted as an SQL ORDER BY clause
+	 *            (excluding the ORDER BY itself). Passing null will use the
+	 *            default sort order, which may be unordered.
+	 * @param limit
+	 *            Limits the number of rows returned by the query, formatted as
+	 *            LIMIT clause. Passing null denotes no LIMIT clause.
+	 * @return A {@link Cursor} object, which is positioned before the first
+	 *         entry. Note that {@link Cursor}s are not synchronized, see the
+	 *         documentation for more details.
+	 * @throws SQLiteException
+	 * @see Cursor
+	 */
+	public SQLiteCursor query(boolean distinct, String table, String[] columns,
+			String selection, String[] selectionArgs, String groupBy,
+			String having, String orderBy, String limit) throws SQLiteException {
+		return queryWithFactory(null, distinct, table, columns, selection, selectionArgs,
+				groupBy, having, orderBy, limit, null);
+	}
+
+	/**
+	 * Query the given URL, returning a {@link Cursor} over the result set.
+	 *
+	 * @param cursorFactory
+	 *            the cursor factory to use, or null for the default factory
+	 * @param distinct
+	 *            true if you want each row to be unique, false otherwise.
+	 * @param table
+	 *            The table name to compile the query against.
+	 * @param columns
+	 *            A list of which columns to return. Passing null will return
+	 *            all columns, which is discouraged to prevent reading data from
+	 *            storage that isn't going to be used.
+	 * @param selection
+	 *            A filter declaring which rows to return, formatted as an SQL
+	 *            WHERE clause (excluding the WHERE itself). Passing null will
+	 *            return all rows for the given table.
+	 * @param selectionArgs
+	 *            You may include ?s in selection, which will be replaced by the
+	 *            values from selectionArgs, in order that they appear in the
+	 *            selection. The values will be bound as Strings.
+	 * @param groupBy
+	 *            A filter declaring how to group rows, formatted as an SQL
+	 *            GROUP BY clause (excluding the GROUP BY itself). Passing null
+	 *            will cause the rows to not be grouped.
+	 * @param having
+	 *            A filter declare which row groups to include in the cursor, if
+	 *            row grouping is being used, formatted as an SQL HAVING clause
+	 *            (excluding the HAVING itself). Passing null will cause all row
+	 *            groups to be included, and is required when row grouping is
+	 *            not being used.
+	 * @param orderBy
+	 *            How to order the rows, formatted as an SQL ORDER BY clause
+	 *            (excluding the ORDER BY itself). Passing null will use the
+	 *            default sort order, which may be unordered.
+	 * @param limit
+	 *            Limits the number of rows returned by the query, formatted as
+	 *            LIMIT clause. Passing null denotes no LIMIT clause.
+	 * @param cancellationSignal
+	 *            A signal to cancel the operation in progress, or null if none.
+	 *            If the operation is canceled, then
+	 *            {@link OperationCanceledException} will be thrown when the
+	 *            query is executed.
+	 * @return A {@link Cursor} object, which is positioned before the first
+	 *         entry. Note that {@link Cursor}s are not synchronized, see the
+	 *         documentation for more details.
+	 * @throws SQLiteException
+	 * @see Cursor
+	 */
+	public SQLiteCursor queryWithFactory(CursorFactory cursorFactory,
+			boolean distinct, String table, String[] columns,
+			String selection, String[] selectionArgs, String groupBy,
+			String having, String orderBy, String limit, CancellationSignal cancellationSignal) throws SQLiteException {
+
+		try {
+			String sql = SQLiteQueryBuilder.buildQueryString(
+					distinct, table, columns, selection, groupBy, having, orderBy, limit);
+			// SQLitePreparedStatement sqLitePreparedStatement = new
+			// SQLitePreparedStatement(this, sql, selectionArgs);
+
+			return queryFinalized(sql, selectionArgs);
 
 		} finally {
 
