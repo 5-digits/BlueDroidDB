@@ -1,6 +1,7 @@
 package blue.stack.sqlite;
 
 import android.content.ContentValues;
+import android.text.TextUtils;
 
 public class SQLiteDatabase {
 	private static final String TAG = "SQLiteDatabase";
@@ -241,12 +242,7 @@ public class SQLiteDatabase {
 			SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(), true);
 			sqLitePreparedStatement.bindArguments(bindArgs);
 			sqLitePreparedStatement.stepThis().dispose();
-			// SQLitePreparedStatement statement = new
-			// SQLitePreparedStatement(this, sql.toString(), bindArgs);
-			// try {
-			// return statement.executeInsert();
-			// } finally {
-			// statement.close();
+
 			// }
 		} finally {
 			// releaseReference();
@@ -254,6 +250,98 @@ public class SQLiteDatabase {
 		return conflictAlgorithm;
 	}
 
+	/**
+	 * Convenience method for updating rows in the database.
+	 *
+	 * @param table
+	 *            the table to update in
+	 * @param values
+	 *            a map from column names to new column values. null is a valid
+	 *            value that will be translated to NULL.
+	 * @param whereClause
+	 *            the optional WHERE clause to apply when updating. Passing null
+	 *            will update all rows.
+	 * @param whereArgs
+	 *            You may include ?s in the where clause, which will be replaced
+	 *            by the values from whereArgs. The values will be bound as
+	 *            Strings.
+	 * @return the number of rows affected
+	 */
+	public int update(String table, ContentValues values, String whereClause, String[] whereArgs) {
+		return updateWithOnConflict(table, values, whereClause, whereArgs, CONFLICT_NONE);
+	}
+
+	/**
+	 * Convenience method for updating rows in the database.
+	 *
+	 * @param table
+	 *            the table to update in
+	 * @param values
+	 *            a map from column names to new column values. null is a valid
+	 *            value that will be translated to NULL.
+	 * @param whereClause
+	 *            the optional WHERE clause to apply when updating. Passing null
+	 *            will update all rows.
+	 * @param whereArgs
+	 *            You may include ?s in the where clause, which will be replaced
+	 *            by the values from whereArgs. The values will be bound as
+	 *            Strings.
+	 * @param conflictAlgorithm
+	 *            for update conflict resolver
+	 * @return the number of rows affected
+	 */
+	public int updateWithOnConflict(String table, ContentValues values,
+			String whereClause, String[] whereArgs, int conflictAlgorithm) {
+		if (values == null || values.size() == 0) {
+			throw new IllegalArgumentException("Empty values");
+		}
+
+		try {
+			StringBuilder sql = new StringBuilder(120);
+			sql.append("UPDATE ");
+			sql.append(CONFLICT_VALUES[conflictAlgorithm]);
+			sql.append(table);
+			sql.append(" SET ");
+
+			// move all bind args to one array
+			int setValuesSize = values.size();
+			int bindArgsSize = (whereArgs == null) ? setValuesSize : (setValuesSize + whereArgs.length);
+			Object[] bindArgs = new Object[bindArgsSize];
+			int i = 0;
+			for (String colName : values.keySet()) {
+				sql.append((i > 0) ? "," : "");
+				sql.append(colName);
+				bindArgs[i++] = values.get(colName);
+				sql.append("=?");
+			}
+			if (whereArgs != null) {
+				for (i = setValuesSize; i < bindArgsSize; i++) {
+					bindArgs[i] = whereArgs[i - setValuesSize];
+				}
+			}
+			if (!TextUtils.isEmpty(whereClause)) {
+				sql.append(" WHERE ");
+				sql.append(whereClause);
+			}
+			SQLitePreparedStatement sqLitePreparedStatement;
+			try {
+				sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(),
+						bindArgs);
+				sqLitePreparedStatement.bindArguments(bindArgs);
+				sqLitePreparedStatement.stepThis().dispose();
+				return 1;
+			} catch (SQLiteException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return 0;
+			}
+
+		} finally {
+
+		}
+	}
+
+	/************** native function implementation ************/
 	native int opendb(String fileName, String tempDir) throws SQLiteException;
 
 	native void closedb(int sqliteHandle) throws SQLiteException;
