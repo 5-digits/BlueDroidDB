@@ -2,12 +2,15 @@ package blue.stack.sqlite;
 
 import java.nio.ByteBuffer;
 
+import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException;
+
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
 	private int sqliteStatementHandle;
 
-	private int queryArgsCount;
+	private int mNumParameters;
 	private boolean finalizeAfterQuery = false;
+	Object[] bindArgs = null;
 
 	public int getStatementHandle() {
 		return sqliteStatementHandle;
@@ -18,8 +21,72 @@ public class SQLitePreparedStatement {
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
 	}
 
+	/**
+	 * @param db
+	 * @param string
+	 * @param bindArgs
+	 * @throws SQLiteException
+	 */
+	public SQLitePreparedStatement(SQLiteDatabase db, String sql, Object[] bindArgs) throws SQLiteException {
+		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
+		finalizeAfterQuery = true;
+		this.bindArgs = bindArgs;
+
+	}
+
+	protected void bindArguments(Object[] bindArgs) throws SQLiteException {
+		final int count = bindArgs != null ? bindArgs.length : 0;
+		if (count != mNumParameters) {
+			throw new SQLiteBindOrColumnIndexOutOfRangeException(
+					"Expected " + mNumParameters + " bind arguments but "
+							+ count + " were provided.");
+		}
+		if (count == 0) {
+			return;
+		}
+
+		// final int statementPtr = statement.mStatementPtr;
+		for (int i = 0; i < count; i++) {
+			final Object arg = bindArgs[i];
+			switch (DatabaseUtils.getTypeOfObject(arg)) {
+			case SQLiteCursor.FIELD_TYPE_NULL:
+
+				bindNull(sqliteStatementHandle, i + 1);
+				break;
+			case SQLiteCursor.FIELD_TYPE_INT:
+				bindLong(sqliteStatementHandle, i + 1, ((Number) arg).longValue());
+
+				break;
+			case SQLiteCursor.FIELD_TYPE_FLOAT:
+				bindDouble(sqliteStatementHandle, i + 1, ((Number) arg).doubleValue());
+
+				break;
+			case SQLiteCursor.FIELD_TYPE_BYTEARRAY:
+				ByteBuffer buffer = ByteBuffer.wrap((byte[]) arg);
+				bindByteBuffer(sqliteStatementHandle, i + 1, buffer, buffer.limit());
+				// nativeBindBlob(mConnectionPtr, statementPtr, i + 1, (byte[])
+				// arg);
+				break;
+			case SQLiteCursor.FIELD_TYPE_STRING:
+			default:
+				if (arg instanceof Boolean) {
+					// Provide compatibility with legacy applications which may
+					// pass
+					// Boolean values in bind args.
+					bindLong(sqliteStatementHandle, i + 1, ((Boolean) arg).booleanValue() ? 1 : 0);
+
+				} else {
+					bindString(sqliteStatementHandle, i + 1, arg.toString());
+					// nativeBindString(mConnectionPtr, statementPtr, i + 1,
+					// arg.toString());
+				}
+				break;
+			}
+		}
+	}
+
 	public SQLiteCursor query(Object[] args) throws SQLiteException {
-		if (args == null || args.length != queryArgsCount) {
+		if (args == null || args.length != mNumParameters) {
 			throw new IllegalArgumentException();
 		}
 
@@ -119,6 +186,9 @@ public class SQLitePreparedStatement {
 	native void reset(int statementHandle) throws SQLiteException;
 
 	native int prepare(int sqliteHandle, String sql) throws SQLiteException;
+
+	@Deprecated
+	native int nativeGetParameterCount(int sqliteHandle) throws SQLiteException;
 
 	native void finalize(int statementHandle) throws SQLiteException;
 

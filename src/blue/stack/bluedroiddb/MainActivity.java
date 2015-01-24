@@ -3,6 +3,8 @@ package blue.stack.bluedroiddb;
 import java.io.File;
 
 import android.app.Activity;
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +27,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	Button btnKeyDB;
 	Button btnRekeyDB;
 	Button queryData;
+	Button btnTest;
 	SQLiteDatabase database;
 	SysSQLiteOpenHelper mDbHelper;
 	android.database.sqlite.SQLiteDatabase msq;
@@ -76,23 +79,27 @@ public class MainActivity extends Activity implements OnClickListener {
 			// database.endTransaction();
 			//
 			// // msq.beginTransaction();
-			// long start = System.currentTimeMillis();
-			// for (long i = 0; i < 10000; i++) {
-			// // msq.execSQL("insert INTO users VALUES(?,?,?)", new Object[] {
-			// // i, i + "user", i });
-			// SQLiteStatement state =
-			// msq.compileStatement("insert into users VALUES(?,?,?);");
-			//
-			// state.bindLong(1, i);
-			// state.bindString(2, i + "user");
-			// state.bindLong(3, i);
-			// state.execute();
-			// // System.out.println(ret);
-			// }
-			// long end = System.currentTimeMillis();
-			// System.out.println("MainActivity.onCreate(system)" + (end -
-			// start));
-			// msq.endTransaction();
+
+			if (false) {
+				long start = System.currentTimeMillis();
+				for (long i = 0; i < 10000; i++) {
+					// msq.execSQL("insert INTO users VALUES(?,?,?)", new
+					// Object[] {
+					// i, i + "user", i });
+					SQLiteStatement state =
+							msq.compileStatement("insert into users VALUES(?,?,?);");
+
+					state.bindLong(1, i);
+					state.bindString(2, i + "user");
+					state.bindLong(3, i);
+					state.execute();
+					// System.out.println(ret);
+				}
+				long end = System.currentTimeMillis();
+				System.out.println("MainActivity.onCreate(system)" + (end -
+						start));
+				msq.endTransaction();
+			}
 
 			// database.executeFast("CREATE TABLE chats(uid INTEGER PRIMARY KEY, name TEXT, data BLOB)").stepThis()
 			// .dispose();
@@ -171,6 +178,8 @@ public class MainActivity extends Activity implements OnClickListener {
 		btnKeyDB.setOnClickListener(this);
 		btnRekeyDB.setOnClickListener(this);
 		queryData.setOnClickListener(this);
+		btnTest = (Button) findViewById(R.id.btnTest);
+		btnTest.setOnClickListener(this);
 	}
 
 	@Override
@@ -216,6 +225,7 @@ public class MainActivity extends Activity implements OnClickListener {
 			}
 		} else if (v == btnKeyDB) {
 			database.keyDB(database.getSQLiteHandle(), "12345678");
+
 		} else if (v == btnRekeyDB) {
 			database.reKeyDB(database.getSQLiteHandle(), "12345678", "12345679");
 		} else if (v == btnInsertData) {
@@ -268,6 +278,12 @@ public class MainActivity extends Activity implements OnClickListener {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		} else if (btnTest == v) {
+			ContentValues contentValues = new ContentValues();
+			contentValues.put("uid", 1);
+			contentValues.put("name", "name");
+			contentValues.put("status", 1);
+			database.insert("users", null, contentValues);
 		}
 
 	}

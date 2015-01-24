@@ -1,10 +1,10 @@
 #include "sqlite.h"
 #include <jni.h>
 jfieldID queryArgsCountField;
-
+int  argsNum=0;
 jint sqliteOnJNILoad(JavaVM *vm, void *reserved, JNIEnv *env) {
 	jclass class = (*env)->FindClass(env, "blue/stack/sqlite/SQLitePreparedStatement");
-	queryArgsCountField = (*env)->GetFieldID(env, class, "queryArgsCount", "I");
+	queryArgsCountField = (*env)->GetFieldID(env, class, "mNumParameters", "I");
 	return JNI_VERSION_1_4;
 }
 
@@ -35,6 +35,7 @@ JNIEXPORT int Java_blue_stack_sqlite_SQLitePreparedStatement_prepare(JNIEnv *env
     } else {
     	int argsCount = sqlite3_bind_parameter_count(stmt_handle);
     	(*env)->SetIntField(env, object, queryArgsCountField, argsCount);
+    	argsNum=argsCount;
     }
 
     if (sqlStr != 0) {
@@ -43,6 +44,13 @@ JNIEXPORT int Java_blue_stack_sqlite_SQLitePreparedStatement_prepare(JNIEnv *env
 
     return (int)stmt_handle;
 }
+//JNIEXPORT int Java_blue_stack_sqlite_SQLitePreparedStatement_nativeGetParameterCount(JNIEnv *env, jobject object) {
+//
+//
+//    return argsNum;
+//}
+
+
 
 JNIEXPORT void Java_blue_stack_sqlite_SQLitePreparedStatement_reset(JNIEnv *env, jobject object, int statementHandle) {
 	sqlite3_stmt *handle = (sqlite3_stmt *)statementHandle;
