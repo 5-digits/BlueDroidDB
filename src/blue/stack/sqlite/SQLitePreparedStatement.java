@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteBindOrColumnIndexOutOfRangeException;
 public class SQLitePreparedStatement {
 	private boolean isFinalized = false;
 	private int sqliteStatementHandle;
-
+	private int sqliteHandle;
 	private int mNumParameters;
 	private boolean finalizeAfterQuery = false;
 	Object[] bindArgs = null;
@@ -19,6 +19,8 @@ public class SQLitePreparedStatement {
 	public SQLitePreparedStatement(SQLiteDatabase db, String sql, boolean finalize) throws SQLiteException {
 		finalizeAfterQuery = finalize;
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
+		sqliteHandle = db.getSQLiteHandle();
+
 	}
 
 	/**
@@ -29,6 +31,7 @@ public class SQLitePreparedStatement {
 	 */
 	public SQLitePreparedStatement(SQLiteDatabase db, String sql, Object[] bindArgs) throws SQLiteException {
 		sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
+		sqliteHandle = db.getSQLiteHandle();
 		finalizeAfterQuery = true;
 		this.bindArgs = bindArgs;
 
@@ -117,6 +120,32 @@ public class SQLitePreparedStatement {
 		return step(sqliteStatementHandle);
 	}
 
+	public int executeWithDispose() throws SQLiteException {
+		int result = step(sqliteStatementHandle);
+		dispose();
+		return result;
+	}
+
+	/***
+	 * get update or delete result
+	 * *********/
+	public int executeUpdateWithDispose() throws SQLiteException {
+
+		int result = nativeExecuteForChangedRowCount(sqliteHandle, sqliteStatementHandle);
+		dispose();
+		return result;
+	}
+
+	/***
+	 * insert recorder and get latsed id ,if error return -1
+	 * *********/
+	public long exeInsertWithDispose() throws SQLiteException {
+
+		long result = nativeExecuteForLastInsertedRowId(sqliteHandle, sqliteStatementHandle);
+		dispose();
+		return result;
+	}
+
 	public SQLitePreparedStatement stepThis() throws SQLiteException {
 		step(sqliteStatementHandle);
 		return this;
@@ -170,6 +199,10 @@ public class SQLitePreparedStatement {
 	public void bindLong(int index, long value) throws SQLiteException {
 		bindLong(sqliteStatementHandle, index, value);
 	}
+
+	native long nativeExecuteForLastInsertedRowId(int sqliteHandle, int statementHandle);
+
+	native int nativeExecuteForChangedRowCount(int sqliteHandle, int statementHandle);
 
 	native void bindByteBuffer(int statementHandle, int index, ByteBuffer value, int length) throws SQLiteException;
 

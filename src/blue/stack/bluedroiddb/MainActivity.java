@@ -41,7 +41,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		initView();
 		try {
 
-			file.delete();
+			// file.delete();
 
 			mDbHelper = new SysSQLiteOpenHelper(getApplicationContext());
 
@@ -236,18 +236,20 @@ public class MainActivity extends Activity implements OnClickListener {
 				e.printStackTrace();
 			}
 			long start = System.currentTimeMillis();
-			for (int i = 0; i < 10000; i++) {
+			int count;
+			for (int i = 0; i < 50000; i++) {
 
 				SQLitePreparedStatement state;
 				try {
 					state = database.executeFast("insert INTO users VALUES(?,?,?)");
 					state.requery();
 					state.bindInteger(1, i);
-					state.bindString(2, i + "user");
+					state.bindString(2, i + "bind");
 					state.bindInteger(3, i);
-					state.step();
+					// state.step();
+					state.exeInsertWithDispose();
 
-					state.dispose();
+					// state.dispose();
 
 				} catch (SQLiteException e) {
 					// TODO Auto-generated catch block
@@ -258,7 +260,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
 			}
 			long end = System.currentTimeMillis();
-			System.out.println("MainActivity.onCreate()" + (end - start));
+			System.out.println("MainActivity.onCreate(insert)" + (end - start));
 			database.endTransaction();
 
 		} else if (v == queryData) {
@@ -279,12 +281,70 @@ public class MainActivity extends Activity implements OnClickListener {
 				e.printStackTrace();
 			}
 		} else if (btnTest == v) {
-			ContentValues contentValues = new ContentValues();
-			contentValues.put("uid", 1);
-			contentValues.put("name", "name");
-			contentValues.put("status", 1);
+			// testDBCVupdate();
+			// testDBDelete();
+			// testDBCVupdate();
+			testDBCVInsert();
+		}
+
+	}
+
+	public void testDBCVInsert() {
+		long start = System.currentTimeMillis();
+		ContentValues contentValues = new ContentValues();
+		for (int i = 0; i < 5000; i++) {
+			contentValues.clear();
+			contentValues.put("uid", i);
+			contentValues.put("name", "content" + i);
+			contentValues.put("status", 1 + i);
 			database.insert("users", null, contentValues);
 		}
 
+		long end = System.currentTimeMillis();
+		System.out.println("MainActivity.contentValues(insert)" + (end - start));
+	}
+
+	public void testDBCVupdate() {
+		ContentValues contentValues = new ContentValues();
+		contentValues.put("uid", 2);
+		contentValues.put("name", "name1Update");
+		contentValues.put("status", 3);
+		int reslut = database.update("users", contentValues, "uid<?", new String[] { "3" });
+		System.out.println("MainActivity.testDBCVupdate(ContentValues)" + reslut);
+	}
+
+	public void testDBDelete() {
+		// ContentValues contentValues = new ContentValues();
+		// contentValues.put("uid", 2);
+		// contentValues.put("name", "name1Update");
+		// contentValues.put("status", 3);
+		try {
+			int count = database.delete("users", "uid<?", new String[] { "5" });
+			System.out.println("MainActivity.testDBDelete()" + count);
+		} catch (SQLiteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void testDBQuery() {
+
+		SQLiteCursor cursor = database.query("users", null, null, new String[] {},
+				null,
+				null, null);
+		try {
+			long start = System.currentTimeMillis();
+			while (cursor.next()) {
+				//
+				// System.out.println("cursor.intValue(1)" + );
+
+				cursor.stringValue(0);
+			}
+			long end = System.currentTimeMillis();
+			System.out.println("MainActivity.(testDBQuery)" + (end - start));
+		} catch (SQLiteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

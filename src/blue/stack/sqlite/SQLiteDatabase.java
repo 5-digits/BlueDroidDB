@@ -159,6 +159,7 @@ public class SQLiteDatabase {
 	}
 
 	/**
+	 *
 	 * Convenience method for inserting a row into the database.
 	 *
 	 * @param table
@@ -178,6 +179,7 @@ public class SQLiteDatabase {
 	 *            values
 	 * @return the row ID of the newly inserted row, or -1 if an error occurred
 	 */
+	@Deprecated
 	public long insert(String table, String nullColumnHack, ContentValues values) {
 		try {
 			return insertWithOnConflict(table, nullColumnHack, values, 0);
@@ -246,7 +248,7 @@ public class SQLiteDatabase {
 			sql.append(')');
 			SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(), true);
 			sqLitePreparedStatement.bindArguments(bindArgs);
-			sqLitePreparedStatement.stepThis().dispose();
+			sqLitePreparedStatement.exeInsertWithDispose();
 
 			// }
 		} finally {
@@ -333,12 +335,12 @@ public class SQLiteDatabase {
 				sqLitePreparedStatement = new SQLitePreparedStatement(this, sql.toString(),
 						bindArgs);
 				sqLitePreparedStatement.bindArguments(bindArgs);
-				sqLitePreparedStatement.stepThis().dispose();
-				return 1;
+				return sqLitePreparedStatement.executeUpdateWithDispose();
+				// return //return 1;
 			} catch (SQLiteException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				return 0;
+				return -1;
 			}
 
 		} finally {
@@ -367,9 +369,8 @@ public class SQLiteDatabase {
 		SQLitePreparedStatement sqLitePreparedStatement = new SQLitePreparedStatement(this, "DELETE FROM " + table +
 				(!TextUtils.isEmpty(whereClause) ? " WHERE " + whereClause : ""), whereArgs);
 		sqLitePreparedStatement.bindArguments(whereArgs);
-		sqLitePreparedStatement.stepThis().dispose();
-		// TODO add result
-		return sqliteHandle;
+		return sqLitePreparedStatement.executeUpdateWithDispose();
+
 	}
 
 	public SQLiteCursor query(String table, String[] columns, String selection,
